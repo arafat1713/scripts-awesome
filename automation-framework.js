@@ -63,7 +63,7 @@ class BrowserAutomation {
         }
 
         // 2. Text-based XPath
-        const text = el.innerText.trim();
+        const text = (el.innerText || '').trim();
         if (text && text.length < 100) {
             selectors.fallbacks.push(`//*[text()="${text}"]`);
             selectors.fallbacks.push(`//*[contains(text(), "${text}")]`);

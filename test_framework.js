@@ -6,6 +6,7 @@ global.window = {
     innerHeight: 1000
 };
 global.document = {
+    body: { tagName: 'BODY' },
     evaluate: (xpath, context, resolver, type, result) => {
         console.log(`Mock document.evaluate: ${xpath}`);
         if (xpath === '//button[@id="success"]' || xpath === '//*[contains(text(), "Submit button") or contains(@aria-label, "Submit button") or contains(@placeholder, "Submit button")]') {
@@ -13,7 +14,8 @@ global.document = {
                 click: () => console.log('Mock Element Clicked'),
                 scrollIntoView: (opts) => console.log('Mock Element scrolledIntoView', opts),
                 dispatchEvent: (ev) => console.log('Mock Element dispatched event', ev.type),
-                getAttribute: (attr) => null
+                getAttribute: (attr) => null,
+                tagName: 'BUTTON'
             } };
         }
         return { singleNodeValue: null };
@@ -60,6 +62,18 @@ async function runTests() {
     const config = automation.exportSelectorConfigs();
     if (!config.includes('submitBtn')) throw new Error('Export failed');
     automation.importSelectorConfigs(config, { overwrite: true });
+
+    console.log('--- Test: _generateRobustSelectors with null innerText ---');
+    const mockElNoText = {
+        getAttribute: (attr) => null,
+        innerText: undefined,
+        tagName: 'DIV',
+        parentNode: { childNodes: [] },
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 })
+    };
+    mockElNoText.parentNode.childNodes = [mockElNoText];
+    const selectors = automation._generateRobustSelectors(mockElNoText);
+    if (selectors.primary) console.log('Generated selectors for element with no text.');
 
     console.log('All tests passed!');
 }
