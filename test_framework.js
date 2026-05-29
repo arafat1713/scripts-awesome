@@ -69,6 +69,28 @@ async function runTests() {
     const nullEl = automation._evaluateXPath('//invalid');
     if (nullEl !== null) throw new Error('_evaluateXPath failed to return null for invalid xpath');
 
+    console.log('--- Test: Export/Import ---');
+    const exported = automation.exportRegistry();
+    if (!exported.includes('submitBtn')) throw new Error('Export failed to include registered element');
+
+    const newJson = JSON.stringify({
+        newBtn: { xpaths: ['//new'], description: 'new' },
+        submitBtn: { xpaths: ['//updated'], description: 'updated' }
+    });
+
+    // Test merge (default)
+    automation.importRegistry(newJson);
+    if (automation.elements.submitBtn.xpaths[0] !== '//button[@id="fail"]') throw new Error('Import merged incorrectly (overwrote existing)');
+    if (!automation.elements.newBtn) throw new Error('Import failed to add new element');
+
+    // Test overwrite
+    automation.importRegistry(newJson, { overwrite: true });
+    if (automation.elements.submitBtn.xpaths[0] !== '//updated') throw new Error('Import overwrite failed');
+
+    console.log('--- Test: docs ---');
+    global.console.table = (obj) => console.log('Mock console.table called with keys:', Object.keys(obj));
+    automation.docs();
+
     console.log('All tests passed!');
 }
 

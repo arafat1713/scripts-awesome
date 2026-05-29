@@ -42,6 +42,119 @@ class BrowserAutomation {
     }
 
     /**
+     * Generates a unique XPath for a given element.
+     * @private
+     */
+    _generateXPath(el) {
+        if (el.id !== '') return `//*[@id="${el.id}"]`;
+        if (el === document.body) return '/html/body';
+
+        let ix = 0;
+        const siblings = el.parentNode.childNodes;
+        for (let i = 0; i < siblings.length; i++) {
+            const sibling = siblings[i];
+            if (sibling === el) {
+                return this._generateXPath(el.parentNode) + '/' + el.tagName.toLowerCase() + '[' + (ix + 1) + ']';
+            }
+            if (sibling.nodeType === 1 && sibling.tagName === el.tagName) {
+                ix++;
+            }
+        }
+    }
+
+    /**
+     * Starts an interactive element picker.
+     */
+    startPicker() {
+        console.log('Element picker started. Click an element to capture it. Press Escape to cancel.');
+
+        const overlay = document.createElement('div');
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            zIndex: '999999',
+            cursor: 'crosshair',
+            backgroundColor: 'rgba(0, 150, 255, 0.1)',
+            border: '2px solid #007bff'
+        });
+
+        const highlight = document.createElement('div');
+        Object.assign(highlight.style, {
+            position: 'fixed',
+            pointerEvents: 'none',
+            zIndex: '1000000',
+            backgroundColor: 'rgba(0, 150, 255, 0.3)',
+            border: '1px solid #007bff',
+            transition: 'all 0.1s ease'
+        });
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(highlight);
+
+        const onMouseMove = (e) => {
+            overlay.style.pointerEvents = 'none';
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            overlay.style.pointerEvents = 'auto';
+
+            if (el && el !== overlay && el !== highlight) {
+                const rect = el.getBoundingClientRect();
+                Object.assign(highlight.style, {
+                    top: `${rect.top}px`,
+                    left: `${rect.left}px`,
+                    width: `${rect.width}px`,
+                    height: `${rect.height}px`,
+                    display: 'block'
+                });
+            } else {
+                highlight.style.display = 'none';
+            }
+        };
+
+        const onClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            overlay.style.pointerEvents = 'none';
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            overlay.style.pointerEvents = 'auto';
+
+            if (el && el !== overlay && el !== highlight) {
+                const xpath = this._generateXPath(el);
+                const name = prompt(`Captured XPath: ${xpath}\nEnter a unique name for this element:`);
+                if (name) {
+                    const description = prompt('Enter a description for this element:', '');
+                    this.registerElement(name, {
+                        xpaths: [xpath],
+                        description: description
+                    });
+                    this.save();
+                }
+            }
+            cleanup();
+        };
+
+        const onKeydown = (e) => {
+            if (e.key === 'Escape') cleanup();
+        };
+
+        const cleanup = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            overlay.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onKeydown);
+            document.body.removeChild(overlay);
+            document.body.removeChild(highlight);
+            console.log('Element picker stopped.');
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        overlay.addEventListener('click', onClick);
+        document.addEventListener('keydown', onKeydown);
+    }
+
+    /**
      * Internal helper to resolve an element with retry logic.
      * @private
      */
@@ -149,6 +262,50 @@ class BrowserAutomation {
     }
 
     /**
+     * Exports the current element registry as a JSON string.
+     */
+    exportRegistry() {
+        const json = JSON.stringify(this.elements, null, 2);
+        console.log('Registry exported.');
+        return json;
+    }
+
+    /**
+     * Imports elements from a JSON string.
+     * @param {string} json - JSON string of elements.
+     * @param {object} options - { overwrite: boolean }
+     */
+    importRegistry(json, options = { overwrite: false }) {
+        try {
+            const importedElements = JSON.parse(json);
+            if (typeof importedElements !== 'object' || importedElements === null) {
+                throw new Error('Invalid JSON format: expected an object');
+            }
+
+            for (const [name, config] of Object.entries(importedElements)) {
+                if (!config.xpaths || !Array.isArray(config.xpaths)) {
+                    console.warn(`Skipping invalid element: ${name}`);
+                    continue;
+                }
+
+                if (this.elements[name] && !options.overwrite) {
+                    console.log(`Element "${name}" already exists. Skipping (overwrite=false).`);
+                    continue;
+                }
+
+                this.elements[name] = config;
+                console.log(`Element "${name}" ${this.elements[name] ? 'updated' : 'imported'}.`);
+            }
+
+            this.save();
+            console.log('Registry import completed.');
+        } catch (e) {
+            console.error('Failed to import registry:', e.message);
+            throw e;
+        }
+    }
+
+    /**
      * Executes a sequence of steps.
      * @param {Array} steps - Array of step objects {action, target, value, options, continueOnFail}
      * @param {object} options - Global task options like continueOnFail
@@ -209,6 +366,28 @@ class BrowserAutomation {
         if (!steps) throw new Error(`Task "${name}" not found.`);
         return this.runTask(steps, options);
     }
+
+    /**
+     * Displays the list of available functions and their usage.
+     */
+    docs() {
+        const help = {
+            'registerElement(name, config)': 'Registers an element with XPaths. Config: { xpaths: [], description: "" }',
+            'click(target)': 'Clicks on a registered element name or ad-hoc config.',
+            'type(target, text)': 'Types text into an element and dispatches events.',
+            'wait(ms)': 'Waits for the specified duration in milliseconds.',
+            'scroll(target, options)': 'Scrolls to an element or scrolls down if target is null.',
+            'save()': 'Saves all elements and tasks to localStorage.',
+            'load()': 'Loads elements and tasks from localStorage.',
+            'exportRegistry()': 'Returns a JSON string of all registered elements.',
+            'importRegistry(json, options)': 'Imports elements from JSON. Options: { overwrite: false }',
+            'startPicker()': 'Starts interactive mode to click and register elements.',
+            'runTask(steps, options)': 'Executes a sequence of action steps.',
+            'docs()': 'Shows this help message.'
+        };
+
+        console.table(help);
+    }
 }
 
 // Expose to global scope
@@ -225,8 +404,12 @@ if (typeof window !== 'undefined') {
     window.load = automation.load.bind(automation);
     window.scroll = automation.scroll.bind(automation);
     window.wait = automation.wait.bind(automation);
+    window.startPicker = automation.startPicker.bind(automation);
+    window.exportRegistry = automation.exportRegistry.bind(automation);
+    window.importRegistry = automation.importRegistry.bind(automation);
+    window.docs = automation.docs.bind(automation);
 
-    console.log('Automation framework initialized. Access it via window.automation or direct APIs (registerElement, click, type, etc.)');
+    console.log('Automation framework initialized. Access it via window.automation or direct APIs (registerElement, click, type, startPicker, exportRegistry, importRegistry, docs, etc.)');
 }
 
 if (typeof module !== 'undefined') {
