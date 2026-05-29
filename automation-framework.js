@@ -10,21 +10,21 @@ class BrowserAutomation {
     }
 
     /**
-     * Registers an element with its name, XPaths, and metadata.
+     * Registers an element with its name, primary selector, fallbacks, and metadata.
      * @param {string} name - The unique name for the element.
-     * @param {object} config - Configuration including xpaths, description, and supportedActions.
+     * @param {object} config - { primarySelector, fallbacks: [], xpaths: [], description, ... }
      */
     registerElement(name, config) {
         if (!name || typeof name !== 'string') throw new Error('Invalid element name');
-        if (!config || !Array.isArray(config.xpaths)) throw new Error('Invalid element config: xpaths must be an array');
 
         this.elements[name] = {
             name: name,
-            xpaths: config.xpaths,
+            primarySelector: config.primarySelector || (config.xpaths ? config.xpaths[0] : null),
+            fallbacks: config.fallbacks || (config.xpaths ? config.xpaths.slice(1) : []),
             description: config.description || '',
             supportedActions: config.supportedActions || []
         };
-        console.log(`Element "${name}" registered.`);
+        console.log(`Element "${name}" registered with robust selectors.`);
     }
 
     /**
@@ -42,52 +42,76 @@ class BrowserAutomation {
     }
 
     /**
-     * Generates a unique XPath for a given element.
+     * Generates robust selectors for a given element.
      * @private
      */
-    _generateXPath(el) {
-        if (el.id !== '') return `//*[@id="${el.id}"]`;
-        if (el === document.body) return '/html/body';
+    _generateRobustSelectors(el) {
+        const selectors = {
+            primary: null,
+            fallbacks: []
+        };
 
-        let ix = 0;
-        const siblings = el.parentNode.childNodes;
-        for (let i = 0; i < siblings.length; i++) {
-            const sibling = siblings[i];
-            if (sibling === el) {
-                return this._generateXPath(el.parentNode) + '/' + el.tagName.toLowerCase() + '[' + (ix + 1) + ']';
-            }
-            if (sibling.nodeType === 1 && sibling.tagName === el.tagName) {
-                ix++;
+        // 1. Prefer stable attributes
+        const stableAttrs = ['data-testid', 'aria-label', 'name', 'placeholder', 'id'];
+        for (const attr of stableAttrs) {
+            const val = el.getAttribute(attr);
+            if (val) {
+                const xpath = `//*[@${attr}="${val}"]`;
+                if (!selectors.primary) selectors.primary = xpath;
+                else selectors.fallbacks.push(xpath);
             }
         }
+
+        // 2. Text-based XPath
+        const text = el.innerText.trim();
+        if (text && text.length < 100) {
+            selectors.fallbacks.push(`//*[text()="${text}"]`);
+            selectors.fallbacks.push(`//*[contains(text(), "${text}")]`);
+        }
+
+        // 3. Structural XPath
+        const getStructuralXPath = (element) => {
+            if (element.id !== '') return `//*[@id="${element.id}"]`;
+            if (element === document.body) return '/html/body';
+            let ix = 0;
+            const siblings = element.parentNode.childNodes;
+            for (let i = 0; i < siblings.length; i++) {
+                const sibling = siblings[i];
+                if (sibling === element) {
+                    return getStructuralXPath(element.parentNode) + '/' + element.tagName.toLowerCase() + '[' + (ix + 1) + ']';
+                }
+                if (sibling.nodeType === 1 && sibling.tagName === element.tagName) {
+                    ix++;
+                }
+            }
+        };
+        const structural = getStructuralXPath(el);
+        if (!selectors.primary) selectors.primary = structural;
+        else selectors.fallbacks.push(structural);
+
+        // Remove duplicates
+        selectors.fallbacks = [...new Set(selectors.fallbacks)].filter(f => f !== selectors.primary);
+
+        return selectors;
     }
 
     /**
-     * Starts an interactive element picker.
+     * Starts an interactive robust element picker.
      */
     startPicker() {
-        console.log('Element picker started. Click an element to capture it. Press Escape to cancel.');
+        console.log('Robust Element picker started. Click an element to capture it. Press Escape to cancel.');
 
         const overlay = document.createElement('div');
         Object.assign(overlay.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            zIndex: '999999',
-            cursor: 'crosshair',
-            backgroundColor: 'rgba(0, 150, 255, 0.1)',
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            zIndex: '999999', cursor: 'crosshair', backgroundColor: 'rgba(0, 150, 255, 0.1)',
             border: '2px solid #007bff'
         });
 
         const highlight = document.createElement('div');
         Object.assign(highlight.style, {
-            position: 'fixed',
-            pointerEvents: 'none',
-            zIndex: '1000000',
-            backgroundColor: 'rgba(0, 150, 255, 0.3)',
-            border: '1px solid #007bff',
+            position: 'fixed', pointerEvents: 'none', zIndex: '1000000',
+            backgroundColor: 'rgba(0, 150, 255, 0.3)', border: '1px solid #007bff',
             transition: 'all 0.1s ease'
         });
 
@@ -98,15 +122,10 @@ class BrowserAutomation {
             overlay.style.pointerEvents = 'none';
             const el = document.elementFromPoint(e.clientX, e.clientY);
             overlay.style.pointerEvents = 'auto';
-
             if (el && el !== overlay && el !== highlight) {
                 const rect = el.getBoundingClientRect();
                 Object.assign(highlight.style, {
-                    top: `${rect.top}px`,
-                    left: `${rect.left}px`,
-                    width: `${rect.width}px`,
-                    height: `${rect.height}px`,
-                    display: 'block'
+                    top: `${rect.top}px`, left: `${rect.left}px`, width: `${rect.width}px`, height: `${rect.height}px`, display: 'block'
                 });
             } else {
                 highlight.style.display = 'none';
@@ -114,20 +133,19 @@ class BrowserAutomation {
         };
 
         const onClick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
+            e.preventDefault(); e.stopPropagation();
             overlay.style.pointerEvents = 'none';
             const el = document.elementFromPoint(e.clientX, e.clientY);
             overlay.style.pointerEvents = 'auto';
 
             if (el && el !== overlay && el !== highlight) {
-                const xpath = this._generateXPath(el);
-                const name = prompt(`Captured XPath: ${xpath}\nEnter a unique name for this element:`);
+                const selectors = this._generateRobustSelectors(el);
+                const name = prompt(`Captured Selectors.\nPrimary: ${selectors.primary}\nFallbacks: ${selectors.fallbacks.length}\n\nEnter a unique name:`);
                 if (name) {
-                    const description = prompt('Enter a description for this element:', '');
+                    const description = prompt('Enter description:', '');
                     this.registerElement(name, {
-                        xpaths: [xpath],
+                        primarySelector: selectors.primary,
+                        fallbacks: selectors.fallbacks,
                         description: description
                     });
                     this.save();
@@ -136,9 +154,7 @@ class BrowserAutomation {
             cleanup();
         };
 
-        const onKeydown = (e) => {
-            if (e.key === 'Escape') cleanup();
-        };
+        const onKeydown = (e) => { if (e.key === 'Escape') cleanup(); };
 
         const cleanup = () => {
             document.removeEventListener('mousemove', onMouseMove);
@@ -146,7 +162,7 @@ class BrowserAutomation {
             document.removeEventListener('keydown', onKeydown);
             document.body.removeChild(overlay);
             document.body.removeChild(highlight);
-            console.log('Element picker stopped.');
+            console.log('Robust Element picker stopped.');
         };
 
         document.addEventListener('mousemove', onMouseMove);
@@ -155,52 +171,84 @@ class BrowserAutomation {
     }
 
     /**
-     * Internal helper to resolve an element with retry logic.
-     * @private
+     * Robust element finding with self-healing.
      */
-    async _resolveWithRetry(elementConfig) {
-        const findElement = () => {
-            for (const xpath of elementConfig.xpaths) {
-                const el = this._evaluateXPath(xpath);
-                if (el) return el;
+    async find(target) {
+        let elementConfig;
+        let name = 'unnamed';
+
+        if (typeof target === 'string') {
+            name = target;
+            elementConfig = this.elements[target];
+            if (!elementConfig) throw new Error(`Element "${target}" not found in registry.`);
+        } else {
+            elementConfig = target;
+            name = elementConfig.name || 'unnamed';
+        }
+
+        const selectors = [
+            elementConfig.primarySelector,
+            ...(elementConfig.fallbacks || []),
+            ...(elementConfig.xpaths || [])
+        ].filter(Boolean);
+
+        let element = null;
+        let usedSelector = null;
+
+        const attemptAllSelectors = () => {
+            for (const selector of selectors) {
+                console.log(`Trying selector for "${name}": ${selector}`);
+                const el = this._evaluateXPath(selector);
+                if (el) {
+                    usedSelector = selector;
+                    return el;
+                }
             }
             return null;
         };
 
-        let element = findElement();
+        // Try primary and fallbacks with retries
         let retries = this.config.retryCount;
-
-        while (!element && retries > 0) {
-            console.log(`Element "${elementConfig.name || 'unnamed'}" not found, retrying... (${retries} left)`);
-            await this.wait(this.config.retryInterval);
-            element = findElement();
+        while (!element && retries >= 0) {
+            element = attemptAllSelectors();
+            if (!element && retries > 0) {
+                console.log(`Element "${name}" not found with any selector. Retrying in ${this.config.retryInterval}ms... (${retries} left)`);
+                await this.wait(this.config.retryInterval);
+            }
             retries--;
         }
 
+        // If failed, try heuristic search (visible text)
+        if (!element && elementConfig.description) {
+            console.log(`All selectors failed for "${name}". Trying heuristic search by description/text...`);
+            const text = elementConfig.description;
+            const heuristicXPath = `//*[contains(text(), "${text}") or contains(@aria-label, "${text}") or contains(@placeholder, "${text}")]`;
+            element = this._evaluateXPath(heuristicXPath);
+            if (element) {
+                usedSelector = heuristicXPath;
+                console.log(`Heuristic recovery successful for "${name}" using text: ${text}`);
+            }
+        }
+
+        // Self-healing: Update primary if fallback was used
+        if (element && usedSelector !== elementConfig.primarySelector && typeof target === 'string') {
+            console.log(`Self-healing triggered for "${name}". Updating primary selector.`);
+            this.elements[name].primarySelector = usedSelector;
+            this.save();
+        }
+
         if (!element) {
-            throw new Error(`Failed to resolve element: ${elementConfig.name || 'unnamed'} using provided XPaths.`);
+            throw new Error(`Failed to locate element "${name}" after trying all selectors and heuristics.`);
         }
 
         return element;
     }
 
     /**
-     * Resolves an element from its name or config using XPaths.
-     * @param {string|object} target - Element name or config.
-     * @returns {Promise<HTMLElement>}
+     * Resolves an element (Legacy support for resolveElement)
      */
     async resolveElement(target) {
-        let elementConfig;
-        if (typeof target === 'string') {
-            elementConfig = this.elements[target];
-            if (!elementConfig) throw new Error(`Element "${target}" not found in registry.`);
-        } else if (target && Array.isArray(target.xpaths)) {
-            elementConfig = target;
-        } else {
-            throw new Error('Invalid resolve target: must be element name or config with xpaths');
-        }
-
-        return await this._resolveWithRetry(elementConfig);
+        return this.find(target);
     }
 
     async click(target) {
@@ -211,10 +259,20 @@ class BrowserAutomation {
 
     async type(target, text) {
         const el = await this.resolveElement(target);
-        el.value = text;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log(`Typed "${text}" into element: ${typeof target === 'string' ? target : 'config'}`);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) {
+            if (el.isContentEditable) {
+                el.innerText = text;
+            } else {
+                el.value = text;
+            }
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log(`Typed "${text}" into element: ${typeof target === 'string' ? target : 'config'}`);
+        } else {
+            console.warn(`Element is not a typical input/textarea, but attempting to set its value.`);
+            el.value = text;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     }
 
     async wait(ms) {
@@ -262,20 +320,27 @@ class BrowserAutomation {
     }
 
     /**
-     * Exports the current element registry as a JSON string.
+     * Exports the current selector configurations as a JSON string.
      */
-    exportRegistry() {
+    exportSelectorConfigs() {
         const json = JSON.stringify(this.elements, null, 2);
-        console.log('Registry exported.');
+        console.log('Selector configurations exported.');
         return json;
     }
 
     /**
-     * Imports elements from a JSON string.
+     * Alias for exportSelectorConfigs (Legacy support for exportRegistry)
+     */
+    exportRegistry() {
+        return this.exportSelectorConfigs();
+    }
+
+    /**
+     * Imports selector configurations from a JSON string.
      * @param {string} json - JSON string of elements.
      * @param {object} options - { overwrite: boolean }
      */
-    importRegistry(json, options = { overwrite: false }) {
+    importSelectorConfigs(json, options = { overwrite: false }) {
         try {
             const importedElements = JSON.parse(json);
             if (typeof importedElements !== 'object' || importedElements === null) {
@@ -283,26 +348,28 @@ class BrowserAutomation {
             }
 
             for (const [name, config] of Object.entries(importedElements)) {
-                if (!config.xpaths || !Array.isArray(config.xpaths)) {
-                    console.warn(`Skipping invalid element: ${name}`);
-                    continue;
-                }
-
                 if (this.elements[name] && !options.overwrite) {
                     console.log(`Element "${name}" already exists. Skipping (overwrite=false).`);
                     continue;
                 }
 
                 this.elements[name] = config;
-                console.log(`Element "${name}" ${this.elements[name] ? 'updated' : 'imported'}.`);
+                console.log(`Element "${name}" configuration ${this.elements[name] ? 'updated' : 'imported'}.`);
             }
 
             this.save();
-            console.log('Registry import completed.');
+            console.log('Selector configurations import completed.');
         } catch (e) {
-            console.error('Failed to import registry:', e.message);
+            console.error('Failed to import selector configs:', e.message);
             throw e;
         }
+    }
+
+    /**
+     * Alias for importSelectorConfigs (Legacy support for importRegistry)
+     */
+    importRegistry(json, options) {
+        return this.importSelectorConfigs(json, options);
     }
 
     /**
@@ -405,11 +472,13 @@ if (typeof window !== 'undefined') {
     window.scroll = automation.scroll.bind(automation);
     window.wait = automation.wait.bind(automation);
     window.startPicker = automation.startPicker.bind(automation);
+    window.exportSelectorConfigs = automation.exportSelectorConfigs.bind(automation);
+    window.importSelectorConfigs = automation.importSelectorConfigs.bind(automation);
     window.exportRegistry = automation.exportRegistry.bind(automation);
     window.importRegistry = automation.importRegistry.bind(automation);
     window.docs = automation.docs.bind(automation);
 
-    console.log('Automation framework initialized. Access it via window.automation or direct APIs (registerElement, click, type, startPicker, exportRegistry, importRegistry, docs, etc.)');
+    console.log('Automation framework initialized. Access it via window.automation or direct APIs (registerElement, click, type, startPicker, exportSelectorConfigs, importSelectorConfigs, docs, etc.)');
 }
 
 if (typeof module !== 'undefined') {
