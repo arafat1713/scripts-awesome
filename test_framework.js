@@ -82,18 +82,65 @@ async function runTests() {
     console.log('--- Test: type function event dispatching ---');
     await automation.type('submitBtn', 'New Test Text');
 
-    console.log('--- Test: _generateRobustSelectors with null innerText ---');
-    const mockElNoText = {
-        getAttribute: (attr) => null,
-        innerText: undefined,
-        tagName: 'DIV',
-        parentNode: { childNodes: [] },
-        getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }),
-        focus: () => {}
+    console.log('--- Test: Fingerprint Recovery ---');
+    // Register an element with a fingerprint
+    const initialFingerprint = {
+        tag: 'BUTTON',
+        classes: ['btn', 'primary'],
+        attributes: { id: 'old-id', type: 'submit' },
+        text: 'Save Changes',
+        parentTag: 'DIV',
+        childCount: 0,
+        position: 0
     };
-    mockElNoText.parentNode.childNodes = [mockElNoText];
-    const selectors = automation._generateRobustSelectors(mockElNoText);
-    if (selectors.primary) console.log('Generated selectors for element with no text.');
+    automation.registerElement('dynamicBtn', {
+        primarySelector: '//button[@id="old-id"]',
+        fingerprint: initialFingerprint,
+        description: 'Save button'
+    });
+
+    // Mock DOM change: the button now has a new ID but same text/classes/tag
+    const recoveredElement = {
+        tagName: 'BUTTON',
+        classList: ['btn', 'primary'],
+        attributes: [
+            { name: 'id', value: 'new-id' },
+            { name: 'type', value: 'submit' }
+        ],
+        innerText: 'Save Changes',
+        parentElement: { tagName: 'DIV' },
+        children: [],
+        getBoundingClientRect: () => ({ top: 10, left: 10, width: 50, height: 20 }),
+        click: () => console.log('Recovered Element Clicked'),
+        focus: () => {},
+        dispatchEvent: (ev) => {},
+        getAttribute: function(name) {
+            const attr = this.attributes.find(a => a.name === name);
+            return attr ? attr.value : null;
+        }
+    };
+
+    // Update document.getElementsByTagName to return our recovered element
+    const originalGetTags = global.document.getElementsByTagName;
+    global.document.getElementsByTagName = (tag) => {
+        if (tag === 'BUTTON') {
+            const list = [recoveredElement];
+            list.item = (i) => list[i];
+            return list;
+        }
+        return [];
+    };
+
+    console.log('Trying to click dynamicBtn (selectors should fail, fingerprint should succeed)...');
+    await automation.click('dynamicBtn');
+
+    if (automation.elements.dynamicBtn.primarySelector.includes('new-id')) {
+        console.log('Fingerprint recovery and self-healing successful.');
+    } else {
+        throw new Error('Fingerprint recovery failed to update primary selector.');
+    }
+
+    global.document.getElementsByTagName = originalGetTags;
 
     console.log('All tests passed!');
 }

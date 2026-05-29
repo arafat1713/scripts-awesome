@@ -21,6 +21,7 @@ class BrowserAutomation {
             name: name,
             primarySelector: config.primarySelector || (config.xpaths ? config.xpaths[0] : null),
             fallbacks: config.fallbacks || (config.xpaths ? config.xpaths.slice(1) : []),
+            fingerprint: config.fingerprint || null,
             description: config.description || '',
             supportedActions: config.supportedActions || []
         };
@@ -39,6 +40,90 @@ class BrowserAutomation {
             console.warn(`Error evaluating XPath: ${xpath}`, e);
             return null;
         }
+    }
+
+    /**
+     * Generates a fingerprint (snapshot of characteristics) for an element.
+     * @private
+     */
+    _generateFingerprint(el) {
+        if (!el) return null;
+
+        const attributes = {};
+        if (el.attributes) {
+            for (let i = 0; i < el.attributes.length; i++) {
+                const attr = el.attributes[i];
+                attributes[attr.name] = attr.value;
+            }
+        }
+
+        const classes = [];
+        if (el.classList) {
+            for (let i = 0; i < el.classList.length; i++) {
+                classes.push(el.classList[i]);
+            }
+        }
+
+        let position = -1;
+        if (el.parentElement && el.parentElement.children) {
+            for (let i = 0; i < el.parentElement.children.length; i++) {
+                if (el.parentElement.children[i] === el) {
+                    position = i;
+                    break;
+                }
+            }
+        }
+
+        return {
+            tag: el.tagName,
+            classes: classes,
+            attributes: attributes,
+            text: (el.innerText || '').trim().substring(0, 50),
+            parentTag: el.parentElement ? el.parentElement.tagName : null,
+            childCount: el.children ? el.children.length : 0,
+            position: position
+        };
+    }
+
+    /**
+     * Calculates similarity between two fingerprints (0 to 1).
+     * @private
+     */
+    _calculateSimilarity(f1, f2) {
+        if (!f1 || !f2) return 0;
+        if (f1.tag !== f2.tag) return 0;
+
+        let score = 0;
+        let total = 0;
+
+        // Compare text (high weight)
+        if (f1.text && f2.text) {
+            total += 3;
+            if (f1.text === f2.text) score += 3;
+            else if (f1.text.includes(f2.text) || f2.text.includes(f1.text)) score += 1;
+        }
+
+        // Compare classes
+        if (f1.classes.length > 0 || f2.classes.length > 0) {
+            total += 2;
+            const common = f1.classes.filter(c => f2.classes.includes(c));
+            score += (common.length / Math.max(f1.classes.length, f2.classes.length, 1)) * 2;
+        }
+
+        // Compare attributes
+        const attrs1 = Object.keys(f1.attributes);
+        const attrs2 = Object.keys(f2.attributes);
+        if (attrs1.length > 0 || attrs2.length > 0) {
+            total += 2;
+            const commonAttrs = attrs1.filter(a => attrs2.includes(a) && f1.attributes[a] === f2.attributes[a]);
+            score += (commonAttrs.length / Math.max(attrs1.length, attrs2.length, 1)) * 2;
+        }
+
+        // Compare parent
+        total += 1;
+        if (f1.parentTag === f2.parentTag) score += 1;
+
+        return score / total;
     }
 
     /**
@@ -140,12 +225,14 @@ class BrowserAutomation {
 
             if (el && el !== overlay && el !== highlight) {
                 const selectors = this._generateRobustSelectors(el);
+                const fingerprint = this._generateFingerprint(el);
                 const name = prompt(`Captured Selectors.\nPrimary: ${selectors.primary}\nFallbacks: ${selectors.fallbacks.length}\n\nEnter a unique name:`);
                 if (name) {
                     const description = prompt('Enter description:', '');
                     this.registerElement(name, {
                         primarySelector: selectors.primary,
                         fallbacks: selectors.fallbacks,
+                        fingerprint: fingerprint,
                         description: description
                     });
                     this.save();
@@ -168,6 +255,37 @@ class BrowserAutomation {
         document.addEventListener('mousemove', onMouseMove);
         overlay.addEventListener('click', onClick);
         document.addEventListener('keydown', onKeydown);
+    }
+
+    /**
+     * Finds an element by scanning the DOM for the best fingerprint match.
+     * @private
+     */
+    _findByFingerprint(targetFingerprint) {
+        if (!targetFingerprint) return null;
+
+        console.log(`Scanning DOM for fingerprint match (tag: ${targetFingerprint.tag})...`);
+
+        const candidates = document.getElementsByTagName(targetFingerprint.tag);
+        let bestMatch = null;
+        let maxSimilarity = 0;
+
+        for (const el of candidates) {
+            const candidateFingerprint = this._generateFingerprint(el);
+            const similarity = this._calculateSimilarity(targetFingerprint, candidateFingerprint);
+
+            if (similarity > maxSimilarity) {
+                maxSimilarity = similarity;
+                bestMatch = el;
+            }
+        }
+
+        if (maxSimilarity > 0.7) { // Threshold for "good enough" match
+            console.log(`Best fingerprint match found with similarity: ${maxSimilarity.toFixed(2)}`);
+            return bestMatch;
+        }
+
+        return null;
     }
 
     /**
@@ -227,6 +345,18 @@ class BrowserAutomation {
             if (element) {
                 usedSelector = heuristicXPath;
                 console.log(`Heuristic recovery successful for "${name}" using text: ${text}`);
+            }
+        }
+
+        // If still failed, try fingerprint recovery
+        if (!element && elementConfig.fingerprint) {
+            console.log(`Still failed for "${name}". Attempting recovery via fingerprint similarity...`);
+            element = this._findByFingerprint(elementConfig.fingerprint);
+            if (element) {
+                // Generate a new robust XPath for the recovered element
+                const newSelectors = this._generateRobustSelectors(element);
+                usedSelector = newSelectors.primary;
+                console.log(`Fingerprint recovery successful for "${name}". New primary selector suggested: ${usedSelector}`);
             }
         }
 
