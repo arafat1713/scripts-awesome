@@ -1,10 +1,25 @@
 const BrowserAutomation = require('./automation-framework');
 
 // Mocking Browser Environment
+global.HTMLInputElement = { prototype: { value: '' } };
+global.HTMLTextAreaElement = { prototype: { value: '' } };
+
 global.window = {
     scrollBy: (x, y) => console.log(`Mock window.scrollBy(${x}, ${y})`),
-    innerHeight: 1000
+    innerHeight: 1000,
+    HTMLInputElement: global.HTMLInputElement,
+    HTMLTextAreaElement: global.HTMLTextAreaElement
 };
+
+// Mocking property descriptor for type() bypass logic
+Object.defineProperty(global.HTMLInputElement.prototype, 'value', {
+    set: function(val) { console.log('Mock Native Setter called with:', val); },
+    configurable: true
+});
+Object.defineProperty(global.HTMLTextAreaElement.prototype, 'value', {
+    set: function(val) { console.log('Mock Native Setter called with:', val); },
+    configurable: true
+});
 global.document = {
     body: { tagName: 'BODY' },
     evaluate: (xpath, context, resolver, type, result) => {
@@ -12,10 +27,11 @@ global.document = {
         if (xpath === '//button[@id="success"]' || xpath === '//*[contains(text(), "Submit button") or contains(@aria-label, "Submit button") or contains(@placeholder, "Submit button")]') {
             return { singleNodeValue: {
                 click: () => console.log('Mock Element Clicked'),
+                focus: () => console.log('Mock Element Focused'),
                 scrollIntoView: (opts) => console.log('Mock Element scrolledIntoView', opts),
                 dispatchEvent: (ev) => console.log('Mock Element dispatched event', ev.type),
                 getAttribute: (attr) => null,
-                tagName: 'BUTTON'
+                tagName: 'INPUT'
             } };
         }
         return { singleNodeValue: null };
@@ -63,13 +79,17 @@ async function runTests() {
     if (!config.includes('submitBtn')) throw new Error('Export failed');
     automation.importSelectorConfigs(config, { overwrite: true });
 
+    console.log('--- Test: type function event dispatching ---');
+    await automation.type('submitBtn', 'New Test Text');
+
     console.log('--- Test: _generateRobustSelectors with null innerText ---');
     const mockElNoText = {
         getAttribute: (attr) => null,
         innerText: undefined,
         tagName: 'DIV',
         parentNode: { childNodes: [] },
-        getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 })
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }),
+        focus: () => {}
     };
     mockElNoText.parentNode.childNodes = [mockElNoText];
     const selectors = automation._generateRobustSelectors(mockElNoText);

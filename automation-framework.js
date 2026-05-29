@@ -259,20 +259,39 @@ class BrowserAutomation {
 
     async type(target, text) {
         const el = await this.resolveElement(target);
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) {
-            if (el.isContentEditable) {
-                el.innerText = text;
+        const targetName = typeof target === 'string' ? target : 'config';
+
+        console.log(`Typing "${text}" into ${targetName}...`);
+
+        el.focus();
+
+        if (el.isContentEditable) {
+            el.innerText = text;
+        } else {
+            // Native value setter to bypass React/Vue's setter overrides
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                'value'
+            ).set;
+            const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLTextAreaElement.prototype,
+                'value'
+            ).set;
+
+            const setter = el.tagName === 'TEXTAREA' ? nativeTextAreaValueSetter : nativeInputValueSetter;
+
+            if (setter) {
+                setter.call(el, text);
             } else {
                 el.value = text;
             }
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log(`Typed "${text}" into element: ${typeof target === 'string' ? target : 'config'}`);
-        } else {
-            console.warn(`Element is not a typical input/textarea, but attempting to set its value.`);
-            el.value = text;
-            el.dispatchEvent(new Event('input', { bubbles: true }));
         }
+
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('blur', { bubbles: true }));
+
+        console.log(`Successfully typed into ${targetName}.`);
     }
 
     async wait(ms) {
