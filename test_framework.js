@@ -63,6 +63,12 @@ async function runTests() {
     ];
     await automation.runTask(steps);
 
+    console.log('--- Test: internal helper _evaluateXPath ---');
+    const el = automation._evaluateXPath('//button[@id="success"]');
+    if (!el || typeof el.click !== 'function') throw new Error('_evaluateXPath failed to return mock element');
+    const nullEl = automation._evaluateXPath('//invalid');
+    if (nullEl !== null) throw new Error('_evaluateXPath failed to return null for invalid xpath');
+
     console.log('All tests passed!');
 }
 

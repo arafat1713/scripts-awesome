@@ -28,6 +28,50 @@ class BrowserAutomation {
     }
 
     /**
+     * Internal helper to evaluate a single XPath.
+     * @private
+     */
+    _evaluateXPath(xpath) {
+        try {
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            return result.singleNodeValue;
+        } catch (e) {
+            console.warn(`Error evaluating XPath: ${xpath}`, e);
+            return null;
+        }
+    }
+
+    /**
+     * Internal helper to resolve an element with retry logic.
+     * @private
+     */
+    async _resolveWithRetry(elementConfig) {
+        const findElement = () => {
+            for (const xpath of elementConfig.xpaths) {
+                const el = this._evaluateXPath(xpath);
+                if (el) return el;
+            }
+            return null;
+        };
+
+        let element = findElement();
+        let retries = this.config.retryCount;
+
+        while (!element && retries > 0) {
+            console.log(`Element "${elementConfig.name || 'unnamed'}" not found, retrying... (${retries} left)`);
+            await this.wait(this.config.retryInterval);
+            element = findElement();
+            retries--;
+        }
+
+        if (!element) {
+            throw new Error(`Failed to resolve element: ${elementConfig.name || 'unnamed'} using provided XPaths.`);
+        }
+
+        return element;
+    }
+
+    /**
      * Resolves an element from its name or config using XPaths.
      * @param {string|object} target - Element name or config.
      * @returns {Promise<HTMLElement>}
@@ -43,34 +87,7 @@ class BrowserAutomation {
             throw new Error('Invalid resolve target: must be element name or config with xpaths');
         }
 
-        const findElement = () => {
-            for (const xpath of elementConfig.xpaths) {
-                try {
-                    const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const el = result.singleNodeValue;
-                    if (el) return el;
-                } catch (e) {
-                    console.warn(`Error evaluating XPath: ${xpath}`, e);
-                }
-            }
-            return null;
-        };
-
-        let element = findElement();
-        let retries = this.config.retryCount;
-
-        while (!element && retries > 0) {
-            console.log(`Element not found, retrying... (${retries} left)`);
-            await this.wait(this.config.retryInterval);
-            element = findElement();
-            retries--;
-        }
-
-        if (!element) {
-            throw new Error(`Failed to resolve element: ${elementConfig.name || 'unnamed'} using provided XPaths.`);
-        }
-
-        return element;
+        return await this._resolveWithRetry(elementConfig);
     }
 
     async click(target) {
