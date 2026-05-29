@@ -1,0 +1,665 @@
+// ======== InputBot - Advanced Mouse & Keyboard Simulator ========
+const InputBot = {
+    defaultTypeDelay: 35,
+
+    // ==================== KEY CODE MAP ====================
+    keyMap: {
+        'Enter':        { code: 'Enter',        keyCode: 13  },
+        'Tab':          { code: 'Tab',           keyCode: 9   },
+        'Escape':       { code: 'Escape',        keyCode: 27  },
+        'Backspace':    { code: 'Backspace',     keyCode: 8   },
+        'Delete':       { code: 'Delete',        keyCode: 46  },
+        'Space':        { code: 'Space',         keyCode: 32  },
+        ' ':            { code: 'Space',         keyCode: 32  },
+        'ArrowUp':      { code: 'ArrowUp',       keyCode: 38  },
+        'ArrowDown':    { code: 'ArrowDown',     keyCode: 40  },
+        'ArrowLeft':    { code: 'ArrowLeft',     keyCode: 37  },
+        'ArrowRight':   { code: 'ArrowRight',    keyCode: 39  },
+        'Home':         { code: 'Home',          keyCode: 36  },
+        'End':          { code: 'End',           keyCode: 35  },
+        'PageUp':       { code: 'PageUp',        keyCode: 33  },
+        'PageDown':     { code: 'PageDown',      keyCode: 34  },
+        'Insert':       { code: 'Insert',        keyCode: 45  },
+        'CapsLock':     { code: 'CapsLock',      keyCode: 20  },
+        'NumLock':      { code: 'NumLock',       keyCode: 144 },
+        'ScrollLock':   { code: 'ScrollLock',    keyCode: 145 },
+        'Pause':        { code: 'Pause',         keyCode: 19  },
+        'PrintScreen':  { code: 'PrintScreen',   keyCode: 44  },
+        'F1':           { code: 'F1',            keyCode: 112 },
+        'F2':           { code: 'F2',            keyCode: 113 },
+        'F3':           { code: 'F3',            keyCode: 114 },
+        'F4':           { code: 'F4',            keyCode: 115 },
+        'F5':           { code: 'F5',            keyCode: 116 },
+        'F6':           { code: 'F6',            keyCode: 117 },
+        'F7':           { code: 'F7',            keyCode: 118 },
+        'F8':           { code: 'F8',            keyCode: 119 },
+        'F9':           { code: 'F9',            keyCode: 120 },
+        'F10':          { code: 'F10',           keyCode: 121 },
+        'F11':          { code: 'F11',           keyCode: 122 },
+        'F12':          { code: 'F12',           keyCode: 123 },
+        'Control':      { code: 'ControlLeft',   keyCode: 17  },
+        'Shift':        { code: 'ShiftLeft',     keyCode: 16  },
+        'Alt':          { code: 'AltLeft',       keyCode: 18  },
+        'Meta':         { code: 'MetaLeft',      keyCode: 91  },
+        'ContextMenu':  { code: 'ContextMenu',   keyCode: 93  },
+    },
+
+    // ==================== HELPERS ====================
+    getElement(x, y) {
+        return document.elementFromPoint(x, y);
+    },
+
+    _buildKeyInit(key, modifiers = {}) {
+        const mapped = this.keyMap[key];
+        return {
+            bubbles:    true,
+            cancelable: true,
+            key:        key === 'Space' ? ' ' : key,
+            code:       mapped?.code    ?? ('Key' + key.toUpperCase()),
+            keyCode:    mapped?.keyCode ?? key.charCodeAt(0),
+            which:      mapped?.keyCode ?? key.charCodeAt(0),
+            ctrlKey:    modifiers.ctrlKey    ?? false,
+            shiftKey:   modifiers.shiftKey   ?? false,
+            altKey:     modifiers.altKey     ?? false,
+            metaKey:    modifiers.metaKey    ?? false,
+        };
+    },
+
+    dispatchMouse(type, x, y, options = {}) {
+        const el = document.elementFromPoint(x, y);
+        if (!el) {
+            console.warn(`No element at (${x}, ${y})`);
+            return null;
+        }
+        const event = new MouseEvent(type, {
+            bubbles:    true,
+            cancelable: true,
+            view:       window,
+            clientX:    x,
+            clientY:    y,
+            screenX:    x + window.screenX - window.scrollX,
+            screenY:    y + window.screenY - window.scrollY,
+            button:     options.button   ?? 0,
+            buttons:    options.buttons  ?? 1,
+            ctrlKey:    options.ctrlKey  ?? false,
+            shiftKey:   options.shiftKey ?? false,
+            altKey:     options.altKey   ?? false,
+            metaKey:    options.metaKey  ?? false,
+        });
+        el.dispatchEvent(event);
+        return el;
+    },
+
+    // ==================== MOUSE ACTIONS ====================
+    moveTo(x, y) {
+        this.dispatchMouse('mousemove', x, y);
+        console.log(`🟦 Moved to (${x}, ${y})`);
+        return this;
+    },
+
+    click(x, y, options = {}) {
+        const el = this.dispatchMouse('mousedown', x, y, options);
+        this.dispatchMouse('mouseup', x, y, options);
+        if (el) el.click();
+        console.log(`✅ Clicked at (${x}, ${y})`);
+        return this;
+    },
+
+    rightClick(x, y) {
+        this.dispatchMouse('mousedown',    x, y, { button: 2, buttons: 2 });
+        this.dispatchMouse('mouseup',      x, y, { button: 2, buttons: 0 });
+        this.dispatchMouse('contextmenu',  x, y, { button: 2 });
+        console.log(`✅ Right clicked at (${x}, ${y})`);
+        return this;
+    },
+
+    doubleClick(x, y) {
+        this.click(x, y);
+        this.click(x, y);
+        this.dispatchMouse('dblclick', x, y);
+        console.log(`✅ Double clicked at (${x}, ${y})`);
+        return this;
+    },
+
+    middleClick(x, y) {
+        this.dispatchMouse('mousedown', x, y, { button: 1, buttons: 4 });
+        this.dispatchMouse('mouseup',   x, y, { button: 1, buttons: 0 });
+        console.log(`🖱️ Middle clicked at (${x}, ${y})`);
+        return this;
+    },
+
+    mouseDown(x, y, button = 0) {
+        this.dispatchMouse('mousedown', x, y, { button, buttons: button === 0 ? 1 : button === 1 ? 4 : 2 });
+        console.log(`⬇️ Mouse down at (${x}, ${y})`);
+        return this;
+    },
+
+    mouseUp(x, y, button = 0) {
+        this.dispatchMouse('mouseup', x, y, { button, buttons: 0 });
+        console.log(`⬆️ Mouse up at (${x}, ${y})`);
+        return this;
+    },
+
+    mouseEnter(x, y) {
+        this.dispatchMouse('mouseenter', x, y);
+        this.dispatchMouse('mouseover',  x, y);
+        console.log(`🔵 Mouse enter at (${x}, ${y})`);
+        return this;
+    },
+
+    mouseLeave(x, y) {
+        this.dispatchMouse('mouseleave', x, y);
+        this.dispatchMouse('mouseout',   x, y);
+        console.log(`🔵 Mouse leave at (${x}, ${y})`);
+        return this;
+    },
+
+    hover(x, y, durationMs = 500) {
+        this.mouseEnter(x, y);
+        this.moveTo(x, y);
+        setTimeout(() => this.mouseLeave(x, y), durationMs);
+        console.log(`🕐 Hovering at (${x}, ${y}) for ${durationMs}ms`);
+        return this;
+    },
+
+    drag(fromX, fromY, toX, toY, steps = 20) {
+        this.mouseDown(fromX, fromY);
+        const dx = (toX - fromX) / steps;
+        const dy = (toY - fromY) / steps;
+        for (let i = 1; i <= steps; i++) {
+            this.dispatchMouse('mousemove',
+                Math.round(fromX + dx * i),
+                Math.round(fromY + dy * i),
+                { buttons: 1 }
+            );
+        }
+        this.mouseUp(toX, toY);
+        console.log(`🔄 Dragged (${fromX},${fromY}) → (${toX},${toY})`);
+        return this;
+    },
+
+    dragAndDrop(fromX, fromY, toX, toY) {
+        const source = this.getElement(fromX, fromY);
+        const target = this.getElement(toX,   toY);
+
+        if (!source || !target) {
+            console.warn('dragAndDrop: source or target not found');
+            return this;
+        }
+
+        const dt = new DataTransfer();
+
+        source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+        source.dispatchEvent(new DragEvent('drag',      { bubbles: true, dataTransfer: dt }));
+        target.dispatchEvent(new DragEvent('dragenter', { bubbles: true, dataTransfer: dt }));
+        target.dispatchEvent(new DragEvent('dragover',  { bubbles: true, dataTransfer: dt }));
+        target.dispatchEvent(new DragEvent('drop',      { bubbles: true, dataTransfer: dt }));
+        source.dispatchEvent(new DragEvent('dragend',   { bubbles: true, dataTransfer: dt }));
+
+        console.log(`📦 Drag-and-drop (${fromX},${fromY}) → (${toX},${toY})`);
+        return this;
+    },
+
+    scroll(deltaY = -150, x = null, y = null) {
+        const tx = x ?? window.innerWidth  / 2;
+        const ty = y ?? window.innerHeight / 2;
+        const el = this.getElement(tx, ty);
+        el?.dispatchEvent(new WheelEvent('wheel', {
+            bubbles: true, cancelable: true,
+            clientX: tx, clientY: ty, deltaY
+        }));
+        console.log(`📜 Scrolled ${deltaY > 0 ? 'down' : 'up'} (delta: ${deltaY})`);
+        return this;
+    },
+
+    scrollUp(amount = 150, x = null, y = null) {
+        return this.scroll(-Math.abs(amount), x, y);
+    },
+
+    scrollDown(amount = 150, x = null, y = null) {
+        return this.scroll(Math.abs(amount), x, y);
+    },
+
+    scrollElement(el, deltaY = -150) {
+        el?.dispatchEvent(new WheelEvent('wheel', {
+            bubbles: true, cancelable: true, deltaY
+        }));
+        console.log(`📜 Scrolled element`, el?.tagName);
+        return this;
+    },
+
+    // ==================== KEYBOARD ACTIONS ====================
+
+    /**
+     * Press any single key (Enter, Tab, F5, ArrowUp, a, A, 1, etc.)
+     */
+    pressKey(key, modifiers = {}) {
+        const init = this._buildKeyInit(key, modifiers);
+        const el   = document.activeElement ?? document.body;
+
+        el.dispatchEvent(new KeyboardEvent('keydown',  init));
+        el.dispatchEvent(new KeyboardEvent('keypress', init));
+        el.dispatchEvent(new KeyboardEvent('keyup',    init));
+
+        // Special native handling
+        if (key === 'Enter' && (el.tagName === 'BUTTON' || el.tagName === 'A')) {
+            el.click();
+        }
+        if (key === 'Tab') {
+            const focusable = [...document.querySelectorAll(
+                'a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])'
+            )].filter(e => !e.disabled);
+            const idx = focusable.indexOf(el);
+            const next = focusable[modifiers.shiftKey ? idx - 1 : idx + 1];
+            if (next) next.focus();
+        }
+        if ((key === 'Backspace' || key === 'Delete') && el.value !== undefined) {
+            this._handleBackspaceDelete(el, key);
+        }
+
+        console.log(`⌨️ Key pressed: [${key}]`);
+        return this;
+    },
+
+    _handleBackspaceDelete(el, key) {
+        const start = el.selectionStart;
+        const end   = el.selectionEnd;
+        const val   = el.value;
+
+        if (start !== end) {
+            el.value = val.slice(0, start) + val.slice(end);
+            el.setSelectionRange(start, start);
+        } else if (key === 'Backspace' && start > 0) {
+            el.value = val.slice(0, start - 1) + val.slice(start);
+            el.setSelectionRange(start - 1, start - 1);
+        } else if (key === 'Delete' && start < val.length) {
+            el.value = val.slice(0, start) + val.slice(start + 1);
+            el.setSelectionRange(start, start);
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
+    /** Press Enter on focused element */
+    pressEnter() {
+        return this.pressKey('Enter');
+    },
+
+    /** Press Tab (forward) or Shift+Tab (backward) */
+    pressTab(reverse = false) {
+        return this.pressKey('Tab', { shiftKey: reverse });
+    },
+
+    /** Press Escape */
+    pressEscape() {
+        return this.pressKey('Escape');
+    },
+
+    /** Press Backspace */
+    pressBackspace(times = 1) {
+        for (let i = 0; i < times; i++) this.pressKey('Backspace');
+        console.log(`🗑️ Backspace ×${times}`);
+        return this;
+    },
+
+    /** Press Delete */
+    pressDelete(times = 1) {
+        for (let i = 0; i < times; i++) this.pressKey('Delete');
+        console.log(`🗑️ Delete ×${times}`);
+        return this;
+    },
+
+    /** Press Space */
+    pressSpace() {
+        const el = document.activeElement;
+        this.pressKey('Space');
+        if (el && (el.tagName === 'BUTTON' || el.type === 'checkbox' || el.type === 'radio')) {
+            el.click();
+        }
+        return this;
+    },
+
+    /** Arrow navigation */
+    pressArrow(direction = 'Down', times = 1) {
+        const key = 'Arrow' + direction.charAt(0).toUpperCase() + direction.slice(1).toLowerCase();
+        for (let i = 0; i < times; i++) this.pressKey(key);
+        return this;
+    },
+
+    /** Press any F-key: pressF(5) → F5 */
+    pressF(num) {
+        return this.pressKey('F' + num);
+    },
+
+    /** Select All (Ctrl+A) */
+    selectAll() {
+        return this.shortcut('Control', 'a');
+    },
+
+    /** Copy (Ctrl+C) */
+    copy() {
+        return this.shortcut('Control', 'c');
+    },
+
+    /** Cut (Ctrl+X) */
+    cut() {
+        return this.shortcut('Control', 'x');
+    },
+
+    /** Paste (Ctrl+V) */
+    paste() {
+        return this.shortcut('Control', 'v');
+    },
+
+    /** Undo (Ctrl+Z) */
+    undo() {
+        return this.shortcut('Control', 'z');
+    },
+
+    /** Redo (Ctrl+Y) */
+    redo() {
+        return this.shortcut('Control', 'y');
+    },
+
+    /** Find (Ctrl+F) */
+    find() {
+        return this.shortcut('Control', 'f');
+    },
+
+    /** Save (Ctrl+S) */
+    save() {
+        return this.shortcut('Control', 's');
+    },
+
+    /** Keyboard shortcut with modifiers */
+    shortcut(...keys) {
+        const modifiers = {};
+        const mainKey   = keys[keys.length - 1];
+        keys.slice(0, -1).forEach(k => {
+            if (k === 'Control' || k === 'Ctrl') modifiers.ctrlKey  = true;
+            if (k === 'Shift')                   modifiers.shiftKey = true;
+            if (k === 'Alt')                     modifiers.altKey   = true;
+            if (k === 'Meta' || k === 'Command') modifiers.metaKey  = true;
+        });
+        this.pressKey(mainKey, modifiers);
+        console.log(`⚡ Shortcut: ${keys.join(' + ')}`);
+        return this;
+    },
+
+    // ==================== TYPING ====================
+    type(text, delay = null) {
+        const d  = delay ?? this.defaultTypeDelay;
+        const el = document.activeElement;
+        if (!el) { console.warn('No focused element!'); return this; }
+
+        (async () => {
+            for (const char of text) {
+                const init = this._buildKeyInit(char);
+                el.dispatchEvent(new KeyboardEvent('keydown',  init));
+                el.dispatchEvent(new KeyboardEvent('keypress', init));
+
+                if (el.value !== undefined) {
+                    const s = el.selectionStart ?? el.value.length;
+                    const e = el.selectionEnd   ?? el.value.length;
+                    el.value = el.value.slice(0, s) + char + el.value.slice(e);
+                    el.setSelectionRange(s + 1, s + 1);
+                    el.dispatchEvent(new Event('input',  { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                } else if (el.isContentEditable) {
+                    document.execCommand('insertText', false, char);
+                }
+
+                el.dispatchEvent(new KeyboardEvent('keyup', init));
+                await new Promise(r => setTimeout(r, d));
+            }
+            console.log(`⌨️ Typed: "${text}"`);
+        })();
+        return this;
+    },
+
+    /** Click a position, then type */
+    typeAt(x, y, text, delay = null) {
+        this.click(x, y);
+        setTimeout(() => this.type(text, delay), 150);
+        return this;
+    },
+
+    /** Clear field then type */
+    clearAndType(text, delay = null) {
+        const el = document.activeElement;
+        if (!el) return this;
+        if (el.value !== undefined) {
+            el.value = '';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (el.isContentEditable) {
+            document.execCommand('selectAll', false, null);
+            document.execCommand('delete',    false, null);
+        }
+        this.type(text, delay);
+        console.log(`🧹 Cleared & typed: "${text}"`);
+        return this;
+    },
+
+    /** Set value directly and fire all events */
+    setValue(el, value) {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype, 'value'
+        )?.set;
+        if (nativeInputValueSetter) {
+            nativeInputValueSetter.call(el, value);
+        } else {
+            el.value = value;
+        }
+        el.dispatchEvent(new Event('input',  { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log(`📝 Set value: "${value}"`);
+        return this;
+    },
+
+    // ==================== ELEMENT ACTIONS ====================
+    clickElement(el) {
+        if (!el) { console.warn('clickElement: no element'); return this; }
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.focus();
+        el.click();
+        console.log(`✅ Clicked element: <${el.tagName}> .${el.className || '(no class)'}`);
+        return this;
+    },
+
+    typeElement(el, text, delay = null) {
+        if (!el) { console.warn('typeElement: no element'); return this; }
+        el.focus();
+        this.type(text, delay);
+        return this;
+    },
+
+    focusElement(el) {
+        el?.focus();
+        console.log(`🎯 Focused: <${el?.tagName}>`);
+        return this;
+    },
+
+    blurElement(el) {
+        el?.blur();
+        console.log(`💨 Blurred: <${el?.tagName}>`);
+        return this;
+    },
+
+    submitForm(formEl) {
+        formEl?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        console.log(`📤 Form submitted`);
+        return this;
+    },
+
+    triggerEvent(el, eventName, detail = {}) {
+        el?.dispatchEvent(new CustomEvent(eventName, { bubbles: true, cancelable: true, detail }));
+        console.log(`📡 Event fired: "${eventName}" on <${el?.tagName}>`);
+        return this;
+    },
+
+    // ==================== VISUAL HELPERS ====================
+    showCoords() {
+        const old = document.getElementById('inputBotCoords');
+        if (old) old.remove();
+        const div = document.createElement('div');
+        div.id = 'inputBotCoords';
+        div.style.cssText = `
+            position:fixed;top:10px;left:10px;z-index:2147483647;
+            background:#000;color:#0f0;padding:12px 16px;
+            border:2px solid #0f0;font-family:'Courier New',monospace;
+            font-size:13px;border-radius:6px;pointer-events:none;
+            box-shadow:0 0 15px rgba(0,255,0,.5);
+        `;
+        div.innerHTML = 'X: 0, Y: 0<br>Hover element: —';
+        document.body.appendChild(div);
+
+        const update = e => {
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            const tag = el ? `&lt;${el.tagName.toLowerCase()}&gt; ${el.id ? '#' + el.id : ''}` : '—';
+            div.innerHTML = `X: ${e.clientX} &nbsp; Y: ${e.clientY}<br>Element: ${tag}`;
+        };
+        document.addEventListener('mousemove', update);
+        this._coordsHandler = update;
+        console.log('%c🟢 Coordinate Tracker ON — InputBot.hideCoords() to stop', 'color:lime;font-size:14px');
+        return this;
+    },
+
+    hideCoords() {
+        document.getElementById('inputBotCoords')?.remove();
+        if (this._coordsHandler) document.removeEventListener('mousemove', this._coordsHandler);
+        console.log('%c🔴 Coordinate Tracker OFF', 'color:orange');
+        return this;
+    },
+
+    // ==================== ASYNC UTILITIES ====================
+    sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
+    },
+
+    async waitFor(selectorOrFn, timeout = 5000, interval = 200) {
+        const start = Date.now();
+        return new Promise((resolve, reject) => {
+            const check = () => {
+                const result = typeof selectorOrFn === 'function'
+                    ? selectorOrFn()
+                    : document.querySelector(selectorOrFn);
+                if (result) return resolve(result);
+                if (Date.now() - start > timeout) return reject(new Error(`waitFor: timeout — ${selectorOrFn}`));
+                setTimeout(check, interval);
+            };
+            check();
+        });
+    },
+
+    async sequence(steps) {
+        for (const step of steps) {
+            await step();
+            await this.sleep(50);
+        }
+        console.log(`✅ Sequence of ${steps.length} steps completed`);
+    },
+
+    log(...args) {
+        console.log('%c[InputBot]', 'color:#0f0;font-weight:bold', ...args);
+        return this;
+    }
+};
+
+// ==================== STARTUP REFERENCE ====================
+console.log('%c🚀 InputBot v3.0 — Full Reference', 'color:cyan;font-size:20px;font-weight:bold');
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+
+console.log('%c🖱️  MOUSE', 'color:orange;font-size:15px;font-weight:bold');
+const mouse = [
+    ['InputBot.click(x, y)',                       'Left click at coordinates'],
+    ['InputBot.rightClick(x, y)',                  'Right click (opens context menu)'],
+    ['InputBot.doubleClick(x, y)',                 'Double click at coordinates'],
+    ['InputBot.middleClick(x, y)',                 'Middle / scroll-wheel click'],
+    ['InputBot.mouseDown(x, y)',                   'Hold mouse button down'],
+    ['InputBot.mouseUp(x, y)',                     'Release mouse button'],
+    ['InputBot.moveTo(x, y)',                      'Move cursor to position'],
+    ['InputBot.hover(x, y, ms)',                   'Hover for N milliseconds'],
+    ['InputBot.mouseEnter(x, y)',                  'Trigger mouseenter + mouseover'],
+    ['InputBot.mouseLeave(x, y)',                  'Trigger mouseleave + mouseout'],
+    ['InputBot.drag(x1,y1, x2,y2, steps)',         'Smooth drag between two points'],
+    ['InputBot.dragAndDrop(x1,y1, x2,y2)',         'HTML5 drag-and-drop events'],
+    ['InputBot.scroll(deltaY, x, y)',              'Scroll wheel (neg=up, pos=down)'],
+    ['InputBot.scrollUp(amount, x, y)',            'Scroll up by amount'],
+    ['InputBot.scrollDown(amount, x, y)',          'Scroll down by amount'],
+    ['InputBot.scrollElement(el, deltaY)',         'Scroll a specific element'],
+];
+mouse.forEach(([fn, desc]) => console.log(`  %-50s %s`.replace('%-50s', fn.padEnd(50)), '→', desc));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c⌨️  KEYBOARD — SPECIAL KEYS', 'color:orange;font-size:15px;font-weight:bold');
+const keys = [
+    ['InputBot.pressEnter()',                      'Press Enter key'],
+    ['InputBot.pressTab(reverse?)',                'Tab (true = Shift+Tab backward)'],
+    ['InputBot.pressEscape()',                     'Press Escape'],
+    ['InputBot.pressBackspace(times)',             'Backspace N times'],
+    ['InputBot.pressDelete(times)',                'Delete N times'],
+    ['InputBot.pressSpace()',                      'Press Space (also clicks buttons/checkboxes)'],
+    ['InputBot.pressArrow("Up/Down/Left/Right", n)','Arrow key N times'],
+    ['InputBot.pressF(n)',                         'Press F1–F12 (e.g. pressF(5) → F5)'],
+    ['InputBot.pressKey("Key", {modifiers})',      'Press ANY key with optional modifiers'],
+    ['InputBot.shortcut("Ctrl","Shift","i")',      'Fire any keyboard shortcut'],
+];
+keys.forEach(([fn, desc]) => console.log(`  ${fn.padEnd(50)} → ${desc}`));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c⌨️  KEYBOARD — SHORTCUTS (BUILT-IN)', 'color:orange;font-size:15px;font-weight:bold');
+const shortcuts = [
+    ['InputBot.selectAll()',   'Ctrl + A'],
+    ['InputBot.copy()',        'Ctrl + C'],
+    ['InputBot.cut()',         'Ctrl + X'],
+    ['InputBot.paste()',       'Ctrl + V'],
+    ['InputBot.undo()',        'Ctrl + Z'],
+    ['InputBot.redo()',        'Ctrl + Y'],
+    ['InputBot.find()',        'Ctrl + F'],
+    ['InputBot.save()',        'Ctrl + S'],
+];
+shortcuts.forEach(([fn, desc]) => console.log(`  ${fn.padEnd(50)} → ${desc}`));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c📝 TYPING & INPUT', 'color:orange;font-size:15px;font-weight:bold');
+const typing = [
+    ['InputBot.type("text", delay?)',              'Type into focused element (char by char)'],
+    ['InputBot.typeAt(x, y, "text")',              'Click position then type'],
+    ['InputBot.clearAndType("text")',              'Clear field first then type'],
+    ['InputBot.setValue(el, "value")',             'Instantly set value (fires all events)'],
+];
+typing.forEach(([fn, desc]) => console.log(`  ${fn.padEnd(50)} → ${desc}`));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c🎯 ELEMENT ACTIONS', 'color:orange;font-size:15px;font-weight:bold');
+const elems = [
+    ['InputBot.clickElement(el)',                  'Scroll into view & click element'],
+    ['InputBot.typeElement(el, "text")',           'Focus element then type into it'],
+    ['InputBot.focusElement(el)',                  'Focus an element'],
+    ['InputBot.blurElement(el)',                   'Remove focus from element'],
+    ['InputBot.submitForm(formEl)',                'Fire submit event on a form'],
+    ['InputBot.triggerEvent(el, "event", detail)', 'Fire any custom/native event'],
+];
+elems.forEach(([fn, desc]) => console.log(`  ${fn.padEnd(50)} → ${desc}`));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c🛠️  UTILITIES', 'color:orange;font-size:15px;font-weight:bold');
+const utils = [
+    ['InputBot.showCoords()',                      'Live XY + element tracker overlay'],
+    ['InputBot.hideCoords()',                      'Hide the tracker'],
+    ['InputBot.sleep(ms)',                         'Promise-based delay (use with await)'],
+    ['InputBot.waitFor(selector, timeout)',        'Wait until element appears in DOM'],
+    ['InputBot.sequence([async fns])',             'Run an ordered list of async steps'],
+    ['InputBot.log(...args)',                      'Styled console output'],
+];
+utils.forEach(([fn, desc]) => console.log(`  ${fn.padEnd(50)} → ${desc}`));
+
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');
+console.log('%c💡 QUICK EXAMPLES', 'color:yellow;font-size:14px;font-weight:bold');
+console.log(`  InputBot.typeAt(300, 400, "Hello World")`);
+console.log(`  InputBot.pressEnter()`);
+console.log(`  InputBot.pressArrow("Down", 3)`);
+console.log(`  InputBot.shortcut("Control","Shift","i")   // Open DevTools`);
+console.log(`  InputBot.pressF(5)                         // Refresh page`);
+console.log(`  InputBot.drag(100,200, 500,200)            // Drag slider`);
+console.log(`  await InputBot.waitFor("#submit-btn"); InputBot.clickElement(document.querySelector("#submit-btn"))`);
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#444');

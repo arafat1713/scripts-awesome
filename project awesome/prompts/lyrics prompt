@@ -1,0 +1,103 @@
+{
+  "compose_song_prompt": {
+    "description": "A detailed prompt template for composing educational nursery rhymes for children using AI music composition tools (Lyria 3 Pro). Designed to teach concepts through fun, catchy, and memorable songs featuring items children love.",
+    
+    "lyrics": {
+      "instrumental_mode": false,
+      "theme": "Educational Nursery Rhyme",
+      "topic_options": [
+        "ABC Alphabet Learning",
+        "Counting Numbers 1 to 10",
+        "Colors of the Rainbow",
+        "Animals on the Farm",
+        "Days of the Week",
+        "Shapes and Sizes",
+        "Good Manners and Sharing",
+        "Healthy Eating Habits",
+        "Body Parts",
+        "Seasons and Weather"
+      ],
+      "selected_topic": "Counting Numbers 1 to 10",
+      "child_friendly_items_to_include": [
+        "teddy bears",
+        "balloons",
+        "puppies and kittens",
+        "ice cream",
+        "rainbows",
+        "stars and moon",
+        "candy and chocolates",
+        "toy trains",
+        "butterflies",
+        "cookies"
+      ],
+      "lyrics_structure": {
+        "verse_1": "Introduce the concept with playful imagery",
+        "chorus": "Catchy, repetitive hook that reinforces the lesson",
+        "verse_2": "Expand with examples using favorite child-items",
+        "chorus_repeat": "Repeat hook for memorization",
+        "outro": "Friendly closing line encouraging participation"
+      },
+      "sample_lyrics": "One little teddy bear sitting on a chair, Two fluffy puppies with curly hair, Three sweet cookies on a shiny plate, Four bright balloons floating up so great! Five, six, seven, count along with me, Eight, nine, ten — as happy as can be!",
+      "language": "English",
+      "language_options": ["English", "Spanish", "French", "Hindi", "Mandarin", "Arabic"]
+    },
+
+    "sound": {
+      "advanced_mode": true,
+      "description": "Cheerful, bright, and playful nursery tune with soft melodic instruments suitable for toddlers and preschoolers. Warm, friendly vocals with a sing-along feel.",
+      "genre": "Children's Nursery Rhyme",
+      "genre_options": [
+        "Classic Nursery Rhyme",
+        "Lullaby",
+        "Pop for Kids",
+        "Folk for Kids",
+        "Educational Sing-Along",
+        "Acoustic Children's Music"
+      ],
+      "mood": "Happy, Playful, Cheerful",
+      "mood_options": ["Happy", "Calm", "Energetic", "Soothing", "Curious", "Magical"],
+      "instruments": [
+        "xylophone",
+        "ukulele",
+        "soft piano",
+        "glockenspiel",
+        "light hand claps",
+        "tambourine",
+        "soft flute"
+      ],
+      "vocals": {
+        "type": "Child-friendly female lead with kids' choir backing",
+        "options": [
+          "Female solo (warm, motherly)",
+          "Male solo (friendly, fatherly)",
+          "Children's choir",
+          "Mixed adult + children's choir"
+        ]
+      }
+    },
+
+    "dynamics": {
+      "BPM": 100,
+      "BPM_options": "Range 80–130 (slower for lullabies, faster for action songs)",
+      "length_seconds": 90,
+      "length_options": "Range 60–180 seconds (ideal for short attention spans)",
+      "seed": 663160,
+      "seed_note": "Change to generate variations of the same prompt",
+      "model": "Lyria 3 Pro",
+      "model_options": ["Lyria 3 Pro", "Lyria 2", "Lyria Lite"]
+    },
+
+    "details": {
+      "title": "Counting with Teddy and Friends",
+      "title_options": [
+        "ABC Adventure Song",
+        "Rainbow Colors Dance",
+        "Ten Tiny Puppies",
+        "My Balloon Counting Song",
+        "Cookie Jar Numbers"
+      ],
+      "upload_image": "optional_cover_art.png",
+      "prompt_image_description": "A colorful cartoon scene with smiling teddy bears, balloons, puppies, and numbers floating in a sunny sky"
+    }
+  }
+}

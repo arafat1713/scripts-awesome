@@ -1,0 +1,350 @@
+/***********************
+ * GLOBAL
+ ***********************/
+ window.__selectedElement = null;
+ window.__items = JSON.parse(localStorage.getItem("items") || "[]");
+ 
+ window.__picking = false;
+ window.__pickHandler = null;
+ 
+ /***********************
+  * HELPERS
+  ***********************/
+ function _save() {
+     localStorage.setItem("items", JSON.stringify(window.__items));
+ }
+ 
+ function _getRect(el) {
+     const rect = el.getBoundingClientRect();
+     return {
+         x: rect.left + rect.width / 2,
+         y: rect.top + rect.height / 2,
+         text: (el.innerText || "").slice(0, 80)
+     };
+ }
+ 
+ function _findByName(name) {
+     return window.__items.find(i => i.name === name);
+ }
+ 
+ function _findIndex(name) {
+     return window.__items.findIndex(i => i.name === name);
+ }
+ 
+ function _generateId() {
+     return Date.now() + Math.random().toString(36).slice(2, 7);
+ }
+ 
+ /***********************
+  * PICKER
+  ***********************/
+ 
+ /* 1️⃣ Enable Picker — single select */
+ function enablePicker() {
+     console.log("👉 Click any element to select it");
+ 
+     function handler(e) {
+         e.preventDefault();
+         e.stopPropagation();
+ 
+         window.__selectedElement = e.target;
+         console.log("%c✅ Selected:", "color:lime;font-size:14px;", e.target);
+ 
+         document.removeEventListener("click", handler, true);
+         console.log("✔️ Picker off");
+     }
+ 
+     document.addEventListener("click", handler, true);
+ }
+ 
+ /* 2️⃣ Enable Picker — batch select */
+ function enableBatchPicker() {
+     console.log("👉 Batch picking started. Click elements one by one.");
+     console.log("👉 Call stopBatchPicker() when done.");
+ 
+     window.__picking = true;
+     window.__batchBuffer = [];
+ 
+     function handler(e) {
+         if (!window.__picking) return;
+ 
+         e.preventDefault();
+         e.stopPropagation();
+ 
+         const el = e.target;
+         if (window.__batchBuffer.includes(el)) return;
+ 
+         el.style.outline = "3px solid red";
+         el.setAttribute("data-picking", "true");
+ 
+         window.__batchBuffer.push(el);
+         console.log(`✅ Picked ${window.__batchBuffer.length}:`, el);
+     }
+ 
+     window.__pickHandler = handler;
+     document.addEventListener("click", handler, true);
+ }
+ 
+ /* 3️⃣ Stop Batch Picker */
+ function stopBatchPicker() {
+     window.__picking = false;
+     document.removeEventListener("click", window.__pickHandler, true);
+     console.log(`🛑 Stopped. Total selected: ${window.__batchBuffer.length}`);
+     console.log("👉 Now call assignBatch([...]) to name them.");
+ }
+ 
+ /***********************
+  * ITEMS — ADD / SAVE
+  ***********************/
+ 
+ /* 4️⃣ Save selected element as item */
+ function saveItem(name, description = "", isNavigatingToOtherPage = false) {
+     const el = window.__selectedElement;
+ 
+     if (!el)   return console.log("❌ No element selected. Run enablePicker() first.");
+     if (!name) return console.log("❌ Provide a name: saveItem('name')");
+ 
+     if (_findByName(name)) return console.log(`❌ Name "${name}" already exists. Use updateItem() or pick a different name.`);
+ 
+     const item = {
+         id: _generateId(),
+         name,
+         description,
+         isNavigatingToOtherPage,
+         ..._getRect(el)
+     };
+ 
+     window.__items.push(item);
+     _save();
+     console.log(`✅ Saved item "${name}"`);
+     console.table([item]);
+ }
+ 
+ /* 5️⃣ Assign names + meta to batch buffer */
+ function assignBatch(dataList) {
+     if (!Array.isArray(dataList))
+         return console.log("❌ Provide an array.");
+ 
+     if (dataList.length !== window.__batchBuffer.length)
+         return console.log(`❌ Count mismatch. You picked ${window.__batchBuffer.length}, provided ${dataList.length}.`);
+ 
+     const added = [];
+ 
+     window.__batchBuffer.forEach((el, i) => {
+         const d = dataList[i];
+         const name = d.name || `item_${_generateId()}`;
+ 
+         if (_findByName(name)) {
+             console.log(`⚠️ Skipped "${name}" — already exists.`);
+             return;
+         }
+ 
+         const item = {
+             id: _generateId(),
+             name,
+             description: d.description || "",
+             isNavigatingToOtherPage: d.isNavigatingToOtherPage || false,
+             ..._getRect(el)
+         };
+ 
+         window.__items.push(item);
+         added.push(item);
+     });
+ 
+     _save();
+     clearPickingHighlights();
+     console.log(`✅ Added ${added.length} items.`);
+     console.table(added);
+ }
+ 
+ /***********************
+  * ITEMS — READ
+  ***********************/
+ 
+ /* 6️⃣ List all items */
+ function listItems() {
+     if (!window.__items.length)
+         return console.log("📭 No items saved.");
+ 
+     console.table(window.__items);
+ }
+ 
+ /***********************
+  * ITEMS — UPDATE
+  ***********************/
+ 
+ /* 7️⃣ Update item coords from currently selected element */
+ function updateItemCoords(name) {
+     const idx = _findIndex(name);
+     if (idx === -1) return console.log("❌ Not found:", name);
+ 
+     if (!window.__selectedElement)
+         return console.log("❌ Select new element first with enablePicker().");
+ 
+     Object.assign(window.__items[idx], _getRect(window.__selectedElement));
+     _save();
+     console.log(`🔄 Updated coords for "${name}"`);
+     console.table([window.__items[idx]]);
+ }
+ 
+ /* 8️⃣ Update item meta (name, description, isNavigatingToOtherPage) */
+ function updateItem(name, newData = {}) {
+     const idx = _findIndex(name);
+     if (idx === -1) return console.log("❌ Not found:", name);
+ 
+     // prevent duplicate name
+     if (newData.name && newData.name !== name && _findByName(newData.name))
+         return console.log(`❌ Name "${newData.name}" already exists.`);
+ 
+     Object.assign(window.__items[idx], newData);
+     _save();
+     console.log(`🔄 Updated "${name}"`);
+     console.table([window.__items[idx]]);
+ }
+ 
+ /***********************
+  * ITEMS — DELETE
+  ***********************/
+ 
+ /* 9️⃣ Delete single item */
+ function deleteItem(name) {
+     const idx = _findIndex(name);
+     if (idx === -1) return console.log("❌ Not found:", name);
+ 
+     window.__items.splice(idx, 1);
+     _save();
+     console.log(`🗑 Deleted "${name}"`);
+ }
+ 
+ /* 🔟 Clear all items */
+ function clearItems() {
+     window.__items = [];
+     _save();
+     console.log("🗑 All items cleared.");
+ }
+ 
+ /***********************
+  * ITEMS — CLICK
+  ***********************/
+ 
+ /* 1️⃣1️⃣ Click item by name */
+ function clickItem(name) {
+     const item = _findByName(name);
+     if (!item) return console.log("❌ Not found:", name);
+ 
+     clickAt(item.x, item.y);
+     console.log(`✅ Clicked "${name}"`);
+ }
+ 
+ /* 1️⃣2️⃣ Click at raw coordinates */
+ function clickAt(x, y) {
+     const el = document.elementFromPoint(x, y);
+     if (!el) return console.log("❌ No element at position");
+ 
+     const options = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y };
+     ["mousedown", "mouseup", "click"].forEach(type =>
+         el.dispatchEvent(new MouseEvent(type, options))
+     );
+ 
+     console.log("✅ Clicked:", el);
+ }
+ 
+ /***********************
+  * HIGHLIGHTS
+  ***********************/
+ function clearPickingHighlights() {
+     document.querySelectorAll("[data-picking='true']").forEach(el => {
+         el.style.outline = "";
+         el.removeAttribute("data-picking");
+     });
+     console.log("🧹 Highlights cleared");
+ }
+ 
+ /***********************
+  * RESET
+  ***********************/
+ function resetSystem() {
+     window.__selectedElement = null;
+     window.__items = [];
+     window.__picking = false;
+     window.__batchBuffer = [];
+ 
+     localStorage.removeItem("items");
+     clearPickingHighlights();
+ 
+     console.log("🧹 FULL SYSTEM RESET COMPLETE");
+ }
+ 
+ /***********************
+  * READY MESSAGE
+  ***********************/
+ console.log(`
+ ✅ ELEMENT SYSTEM READY — Single unified items list
+ 
+ ========================
+ PICKER
+ ========================
+ enablePicker()              → then click one element
+ enableBatchPicker()         → then click multiple elements
+ stopBatchPicker()           → stop batch picking
+ 
+ ========================
+ ADD ITEMS
+ ========================
+ saveItem("loginBtn")
+ saveItem("loginBtn", "Logs user in", false)
+ 
+ assignBatch([
+   { name: "Login",  description: "Logs user in" },
+   { name: "Signup", description: "Creates account", isNavigatingToOtherPage: true }
+ ])
+ 
+ ========================
+ READ ITEMS
+ ========================
+ listItems()
+ 
+ ========================
+ UPDATE ITEMS
+ ========================
+ updateItemCoords("loginBtn")     → re-pick element first
+ updateItem("loginBtn", { description: "Updated", isNavigatingToOtherPage: true })
+ updateItem("loginBtn", { name: "newName" })
+ 
+ ========================
+ DELETE ITEMS
+ ========================
+ deleteItem("loginBtn")
+ clearItems()
+ 
+ ========================
+ CLICK ITEMS
+ ========================
+ clickItem("loginBtn")
+ clickAt(x, y)
+ 
+ ========================
+ SYSTEM
+ ========================
+ clearPickingHighlights()
+ resetSystem()
+ `);
+ function showItems() {
+    if (!window.__items.length)
+        return console.log("📭 No items saved.");
+
+    console.log("📋 SAVED ITEMS LIST\n" + "=".repeat(60));
+
+    window.__items.forEach((item, index) => {
+        console.log(`
+[${index}] 📌 ${item.name}
+     📝 Description  : ${item.description || "—"}
+     🔗 Navigates    : ${item.isNavigatingToOtherPage ? "✅ Yes (other page)" : "❌ No (same page)"}
+     📍 Coords       : x=${Math.round(item.x)}, y=${Math.round(item.y)}
+     💬 Text Preview : ${item.text || "—"}
+        `);
+    });
+
+    console.log("=".repeat(60));
+    console.log(`✅ Total: ${window.__items.length} item(s)`);
+}

@@ -1,0 +1,110 @@
+{
+  "project": {
+    "title": "Counting 1 to 10 - Kids Sing-Along Video",
+    "audio_context": "One little teddy bear sitting on a chair, Two fluffy puppies with curly hair, Three sweet cookies on a shiny plate, Four bright balloons floating up so great! Five, six, seven, count along with me, Eight, nine, ten — as happy as can be! [Chorus] Count with me, 1-2-3, Teddy, puppies, cookies, whee! Count with me, up to ten, Then we'll do it all again! Five little kittens playing with a string, Six toy trains go choo-choo ring, Seven butterflies in the sky so blue, Eight scoops of ice cream just for you! Nine bright stars and the moon so round, Ten big hugs are what we found!",
+    "total_scenes": 10,
+    "global_style": {
+      "art_style": "3D cartoon, Pixar-inspired, soft rounded shapes",
+      "color_palette": "vibrant pastel colors, candy tones, warm lighting",
+      "mood": "cheerful, playful, child-friendly",
+      "lighting": "soft daylight with golden glow",
+      "camera": "front-facing, slight low angle, wide shot",
+      "aspect_ratio": "16:9",
+      "resolution": "4K ultra HD",
+      "target_audience": "toddlers and preschool kids",
+      "consistency_rule": "maintain same room background, same color tones, and same cartoon style across all scenes"
+    }
+  },
+  "scenes": [
+    {
+      "scene_number": 1,
+      "title": "One Teddy Bear on Chair",
+      "lyric_reference": "One little teddy bear sitting on a chair",
+      "generation_type": "new",
+      "based_on": null,
+      "changes_from_previous": null,
+      "image_prompt": "A cute fluffy brown teddy bear with a red bowtie sitting upright on a small wooden yellow chair in a brightly lit pastel-colored kids' playroom, big sparkling eyes, soft toys and rainbow wallpaper in background, large floating number '1' in glittery gold above the bear, 3D Pixar cartoon style, vibrant pastel colors, soft natural lighting, 16:9 wide shot."
+    },
+    {
+      "scene_number": 2,
+      "title": "Two Fluffy Puppies",
+      "lyric_reference": "Two fluffy puppies with curly hair",
+      "generation_type": "modification",
+      "based_on": "Scene 1 - One Teddy Bear on Chair",
+      "changes_from_previous": "Replace the teddy bear and chair with two adorable fluffy puppies with curly white and golden hair. Replace the floating '1' with a glittery '2'. Keep the same playroom background, lighting, and color tone.",
+      "image_prompt": "Two adorable small puppies, one white and one golden, both with curly fluffy hair, sitting playfully on the playroom floor wagging their tails, big floating glittery number '2' in sky-blue above them, same pastel kids' playroom background as Scene 1, 3D Pixar cartoon style, soft natural lighting, 16:9."
+    },
+    {
+      "scene_number": 3,
+      "title": "Three Cookies on Plate",
+      "lyric_reference": "Three sweet cookies on a shiny plate",
+      "generation_type": "new",
+      "based_on": null,
+      "changes_from_previous": "New scene with kitchen background, but maintain the same global cartoon style and color palette.",
+      "image_prompt": "Three round chocolate-chip cookies stacked neatly on a shiny pink ceramic plate placed on a wooden kitchen table, steam rising softly, warm sunlight from window, milk glass beside the plate, big glittery floating number '3' in red above the plate, cozy cartoon kitchen background, 3D Pixar style, vibrant pastel colors, 16:9."
+    },
+    {
+      "scene_number": 4,
+      "title": "Four Floating Balloons",
+      "lyric_reference": "Four bright balloons floating up so great",
+      "generation_type": "modification",
+      "based_on": "Scene 3 - Three Cookies on Plate",
+      "changes_from_previous": "Change scene from indoor kitchen to outdoor garden. Replace cookies and plate with four colorful balloons (red, yellow, green, blue) floating upward. Change the floating number from '3' to '4' in green color.",
+      "image_prompt": "Four bright shiny balloons in red, yellow, green, and blue floating up into a clear blue sky above a sunny green garden with flowers and butterflies, ribbons trailing down, big glittery floating number '4' in green among them, 3D Pixar cartoon style, vibrant pastel colors, soft natural daylight, 16:9 wide shot."
+    },
+    {
+      "scene_number": 5,
+      "title": "Counting 5-6-7 with Kids",
+      "lyric_reference": "Five, six, seven, count along with me",
+      "generation_type": "new",
+      "based_on": null,
+      "changes_from_previous": "New scene introducing animated children characters that will appear in chorus scenes.",
+      "image_prompt": "Three happy cartoon kids (one boy, two girls) standing in a colorful classroom waving and counting on their fingers, large glittery floating numbers '5', '6', '7' in pink, purple, and orange dancing above them, rainbow chart and stars on the wall behind, 3D Pixar cartoon style, vibrant pastel colors, soft warm lighting, 16:9."
+    },
+    {
+      "scene_number": 6,
+      "title": "Counting 8-9-10 Happy Kids",
+      "lyric_reference": "Eight, nine, ten — as happy as can be",
+      "generation_type": "modification",
+      "based_on": "Scene 5 - Counting 5-6-7 with Kids",
+      "changes_from_previous": "Same kids and classroom background, but change their pose to jumping with joy with hands raised high. Replace floating numbers '5', '6', '7' with '8', '9', '10' in turquoise, magenta, and gold.",
+      "image_prompt": "The same three cartoon kids from Scene 5 jumping happily with hands raised, confetti falling around them, glittery floating numbers '8', '9', '10' in turquoise, magenta, and gold above them, same colorful classroom background, 3D Pixar style, vibrant pastel colors, joyful lighting, 16:9."
+    },
+    {
+      "scene_number": 7,
+      "title": "Five Kittens with String",
+      "lyric_reference": "Five little kittens playing with a string",
+      "generation_type": "new",
+      "based_on": null,
+      "changes_from_previous": "New scene with cozy living room setting.",
+      "image_prompt": "Five adorable small kittens of different colors (orange, white, gray, black, calico) playing together with a long red yarn string on a fluffy cream rug in a cozy living room, big glittery floating number '5' in purple above them, sunlight streaming through window, 3D Pixar cartoon style, vibrant pastel colors, 16:9 wide shot."
+    },
+    {
+      "scene_number": 8,
+      "title": "Six Toy Trains",
+      "lyric_reference": "Six toy trains go choo-choo ring",
+      "generation_type": "modification",
+      "based_on": "Scene 7 - Five Kittens with String",
+      "changes_from_previous": "Replace kittens and yarn with six colorful toy trains lined up on a wooden train track. Change floating number from '5' to '6' in bright blue.",
+      "image_prompt": "Six colorful cartoon toy trains (red, blue, yellow, green, orange, purple) lined up in a row on a curving wooden train track, puffing white steam, on the cream rug in the same cozy living room as Scene 7, big glittery floating number '6' in bright blue above them, 3D Pixar style, vibrant pastel colors, 16:9."
+    },
+    {
+      "scene_number": 9,
+      "title": "Seven Butterflies in Sky",
+      "lyric_reference": "Seven butterflies in the sky so blue",
+      "generation_type": "new",
+      "based_on": null,
+      "changes_from_previous": "New outdoor scene with sky background.",
+      "image_prompt": "Seven beautiful colorful butterflies with patterned wings (pink, blue, yellow, purple, orange, green, rainbow) fluttering in a clear bright blue sky above a sunny meadow with flowers, big glittery floating number '7' in pink among them, sparkles trailing their wings, 3D Pixar cartoon style, vibrant pastel colors, soft daylight, 16:9 wide shot."
+    },
+    {
+      "scene_number": 10,
+      "title": "Ten Big Hugs Finale",
+      "lyric_reference": "Nine bright stars and the moon so round, Ten big hugs are what we found",
+      "generation_type": "modification",
+      "based_on": "Scene 6 - Counting 8-9-10 Happy Kids",
+      "changes_from_previous": "Same three kids from Scene 6 but now hugging the teddy bear (Scene 1), puppies (Scene 2), and a kitten (Scene 7) together. Change setting to night sky background with a big round glowing moon and nine twinkling stars. Add a big glittery number '10' in gold center top.",
+      "image_prompt": "The three cartoon kids from Scene 6 happily hugging the teddy bear from Scene 1, the two puppies from Scene 2, and a kitten from Scene 7, all together in a group hug under a magical night sky filled with nine bright twinkling stars and a big round glowing moon, big glittery floating number '10' in gold at the top center, confetti and hearts floating around, 3D Pixar style, vibrant pastel colors, warm magical lighting, 16:9 wide finale shot."
+    }
+  ]
+}

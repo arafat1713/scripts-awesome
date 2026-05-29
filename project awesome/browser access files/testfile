@@ -1,0 +1,72 @@
+🚀 InputBot v3.0 — Full Reference
+VM1322:569 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:571 🖱️  MOUSE
+VM1322:590   InputBot.click(x, y)                               → Left click at coordinates
+VM1322:590   InputBot.rightClick(x, y)                          → Right click (opens context menu)
+VM1322:590   InputBot.doubleClick(x, y)                         → Double click at coordinates
+VM1322:590   InputBot.middleClick(x, y)                         → Middle / scroll-wheel click
+VM1322:590   InputBot.mouseDown(x, y)                           → Hold mouse button down
+VM1322:590   InputBot.mouseUp(x, y)                             → Release mouse button
+VM1322:590   InputBot.moveTo(x, y)                              → Move cursor to position
+VM1322:590   InputBot.hover(x, y, ms)                           → Hover for N milliseconds
+VM1322:590   InputBot.mouseEnter(x, y)                          → Trigger mouseenter + mouseover
+VM1322:590   InputBot.mouseLeave(x, y)                          → Trigger mouseleave + mouseout
+VM1322:590   InputBot.drag(x1,y1, x2,y2, steps)                 → Smooth drag between two points
+VM1322:590   InputBot.dragAndDrop(x1,y1, x2,y2)                 → HTML5 drag-and-drop events
+VM1322:590   InputBot.scroll(deltaY, x, y)                      → Scroll wheel (neg=up, pos=down)
+VM1322:590   InputBot.scrollUp(amount, x, y)                    → Scroll up by amount
+VM1322:590   InputBot.scrollDown(amount, x, y)                  → Scroll down by amount
+VM1322:590   InputBot.scrollElement(el, deltaY)                 → Scroll a specific element
+VM1322:592 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:593 ⌨️  KEYBOARD — SPECIAL KEYS
+VM1322:606   InputBot.pressEnter()                              → Press Enter key
+VM1322:606   InputBot.pressTab(reverse?)                        → Tab (true = Shift+Tab backward)
+VM1322:606   InputBot.pressEscape()                             → Press Escape
+VM1322:606   InputBot.pressBackspace(times)                     → Backspace N times
+VM1322:606   InputBot.pressDelete(times)                        → Delete N times
+VM1322:606   InputBot.pressSpace()                              → Press Space (also clicks buttons/checkboxes)
+VM1322:606   InputBot.pressArrow("Up/Down/Left/Right", n)       → Arrow key N times
+VM1322:606   InputBot.pressF(n)                                 → Press F1–F12 (e.g. pressF(5) → F5)
+VM1322:606   InputBot.pressKey("Key", {modifiers})              → Press ANY key with optional modifiers
+VM1322:606   InputBot.shortcut("Ctrl","Shift","i")              → Fire any keyboard shortcut
+VM1322:608 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:609 ⌨️  KEYBOARD — SHORTCUTS (BUILT-IN)
+VM1322:620   InputBot.selectAll()                               → Ctrl + A
+VM1322:620   InputBot.copy()                                    → Ctrl + C
+VM1322:620   InputBot.cut()                                     → Ctrl + X
+VM1322:620   InputBot.paste()                                   → Ctrl + V
+VM1322:620   InputBot.undo()                                    → Ctrl + Z
+VM1322:620   InputBot.redo()                                    → Ctrl + Y
+VM1322:620   InputBot.find()                                    → Ctrl + F
+VM1322:620   InputBot.save()                                    → Ctrl + S
+VM1322:622 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:623 📝 TYPING & INPUT
+VM1322:630   InputBot.type("text", delay?)                      → Type into focused element (char by char)
+VM1322:630   InputBot.typeAt(x, y, "text")                      → Click position then type
+VM1322:630   InputBot.clearAndType("text")                      → Clear field first then type
+VM1322:630   InputBot.setValue(el, "value")                     → Instantly set value (fires all events)
+VM1322:632 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:633 🎯 ELEMENT ACTIONS
+VM1322:642   InputBot.clickElement(el)                          → Scroll into view & click element
+VM1322:642   InputBot.typeElement(el, "text")                   → Focus element then type into it
+VM1322:642   InputBot.focusElement(el)                          → Focus an element
+VM1322:642   InputBot.blurElement(el)                           → Remove focus from element
+VM1322:642   InputBot.submitForm(formEl)                        → Fire submit event on a form
+VM1322:642   InputBot.triggerEvent(el, "event", detail)         → Fire any custom/native event
+VM1322:644 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:645 🛠️  UTILITIES
+VM1322:654   InputBot.showCoords()                              → Live XY + element tracker overlay
+VM1322:654   InputBot.hideCoords()                              → Hide the tracker
+VM1322:654   InputBot.sleep(ms)                                 → Promise-based delay (use with await)
+VM1322:654   InputBot.waitFor(selector, timeout)                → Wait until element appears in DOM
+VM1322:654   InputBot.sequence([async fns])                     → Run an ordered list of async steps
+VM1322:654   InputBot.log(...args)                              → Styled console output
+VM1322:656 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VM1322:657 💡 QUICK EXAMPLES
+VM1322:658   InputBot.typeAt(300, 400, "Hello World")
+VM1322:659   InputBot.pressEnter()
+VM1322:660   InputBot.pressArrow("Down", 3)
+VM1322:661   InputBot.shortcut("Control","Shift","i")   // Open DevTools
+VM1322:662   InputBot.pressF(5)                         // Refresh page
+VM1322:663   InputBot.drag(100,200, 500,200)            // Drag slider
+VM1322:664   await InputBot.waitFor("#submit-btn"); InputBot.clickElement(document.querySelector("#submit-btn"))
